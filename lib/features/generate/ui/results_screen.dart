@@ -45,7 +45,7 @@ class ResultsScreen extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => _FullScreenViewer(path: path),
+                    builder: (_) => FullScreenViewer(path: path),
                   ),
                 );
               },
@@ -87,8 +87,8 @@ class _ResultTile extends StatelessWidget {
   }
 }
 
-class _FullScreenViewer extends StatelessWidget {
-  const _FullScreenViewer({required this.path});
+class FullScreenViewer extends StatelessWidget {
+  const FullScreenViewer({super.key, required this.path});
 
   final String path;
 

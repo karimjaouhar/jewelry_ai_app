@@ -15,6 +15,8 @@ import 'package:jewelry_ai_app/features/generate/domain/setting_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/skin_tone.dart';
 import 'package:jewelry_ai_app/features/generate/state/generation_flow_controller.dart';
 import 'package:jewelry_ai_app/features/generate/ui/results_screen.dart';
+import 'package:jewelry_ai_app/features/history/data/history_store.dart';
+import 'package:jewelry_ai_app/features/history/domain/history_entry.dart';
 
 class GenerateFlowScreen extends StatelessWidget {
   const GenerateFlowScreen({super.key});
@@ -309,34 +311,28 @@ class GenerateFlowScreen extends StatelessWidget {
             if (controller.status == GenerationStatus.success &&
                 controller.generatedImagePaths.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(
-                'Saved ${controller.generatedImagePaths.length} image(s) to device.',
-                style: textTheme.bodyMedium,
-              ),
-              if (controller.generatedOutputDirectory != null) ...[
-                const SizedBox(height: 8),
-                SelectableText(
-                  controller.generatedOutputDirectory!,
-                  style: textTheme.bodySmall,
-                ),
-              ],
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => ResultsScreen(
-                          imagePaths: controller.generatedImagePaths,
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('View results'),
-                ),
+              _ResultsInlineSection(
+                imagePaths: controller.generatedImagePaths,
               ),
             ],
+            const SizedBox(height: 24),
+            _HistoryInlineSection(
+              onViewAll: () {
+                Navigator.of(context).pushNamed(AppRouter.history);
+              },
+              onViewEntry: (entry) {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ResultsScreen(
+                      imagePaths: entry.outputPaths,
+                    ),
+                  ),
+                );
+              },
+              onReuseEntry: (entry) {
+                controller.applyRequestSnapshot(entry.requestSnapshot);
+              },
+            ),
           ],
         ),
       ),
@@ -426,6 +422,222 @@ class _ErrorBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ResultsInlineSection extends StatelessWidget {
+  const _ResultsInlineSection({required this.imagePaths});
+
+  final List<String> imagePaths;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imagePaths.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: 'Results'),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: imagePaths.length,
+          itemBuilder: (context, index) {
+            final path = imagePaths[index];
+            return _ResultTile(
+              path: path,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => FullScreenViewer(path: path),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ResultTile extends StatelessWidget {
+  const _ResultTile({
+    required this.path,
+    required this.onTap,
+  });
+
+  final String path;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: kIsWeb
+            ? Image.network(path, fit: BoxFit.cover)
+            : Image.file(File(path), fit: BoxFit.cover),
+      ),
+    );
+  }
+}
+
+class _HistoryInlineSection extends StatelessWidget {
+  const _HistoryInlineSection({
+    required this.onViewAll,
+    required this.onViewEntry,
+    required this.onReuseEntry,
+  });
+
+  final VoidCallback onViewAll;
+  final ValueChanged<HistoryEntry> onViewEntry;
+  final ValueChanged<HistoryEntry> onReuseEntry;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<HistoryEntry>>(
+      future: HistoryStore().loadEntries(),
+      builder: (context, snapshot) {
+        final entries = snapshot.data ?? <HistoryEntry>[];
+        final visibleEntries = entries.take(5).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const _SectionHeader(title: 'History'),
+                const Spacer(),
+                TextButton(
+                  onPressed: onViewAll,
+                  child: const Text('View all'),
+                ),
+              ],
+            ),
+            if (visibleEntries.isEmpty)
+              const Text('No history yet.')
+            else
+              ...visibleEntries.map(
+                (entry) => _HistoryInlineTile(
+                  entry: entry,
+                  onView: () => onViewEntry(entry),
+                  onReuse: () => onReuseEntry(entry),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _HistoryInlineTile extends StatelessWidget {
+  const _HistoryInlineTile({
+    required this.entry,
+    required this.onView,
+    required this.onReuse,
+  });
+
+  final HistoryEntry entry;
+  final VoidCallback onView;
+  final VoidCallback onReuse;
+
+  @override
+  Widget build(BuildContext context) {
+    final request = entry.requestSnapshot;
+    final subtitle =
+        '${request.settingType.label} • ${request.compositionType.label}';
+    final thumbnailPath = entry.thumbnailPath;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          _HistoryThumbnail(path: thumbnailPath),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  request.jewelryType.label,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onView,
+            child: const Text('View'),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onReuse,
+            child: const Text('Reuse'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryThumbnail extends StatelessWidget {
+  const _HistoryThumbnail({required this.path});
+
+  final String? path;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 48.0;
+    if (path == null || path!.isEmpty) {
+      return _placeholder(size);
+    }
+
+    final image = kIsWeb
+        ? Image.network(path!, fit: BoxFit.cover)
+        : Image.file(File(path!), fit: BoxFit.cover);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: size,
+        width: size,
+        child: image,
+      ),
+    );
+  }
+
+  Widget _placeholder(double size) {
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        color: Colors.black12,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(Icons.image_outlined),
     );
   }
 }

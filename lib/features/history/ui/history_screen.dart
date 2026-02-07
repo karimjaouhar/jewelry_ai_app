@@ -9,6 +9,7 @@ import 'package:jewelry_ai_app/features/generate/domain/generation_request.dart'
 import 'package:jewelry_ai_app/features/generate/domain/composition_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/jewelry_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/setting_type.dart';
+import 'package:jewelry_ai_app/features/generate/ui/results_screen.dart';
 import 'package:jewelry_ai_app/features/generate/state/generation_flow_controller.dart';
 import 'package:jewelry_ai_app/features/history/data/history_store.dart';
 import 'package:jewelry_ai_app/features/history/domain/history_entry.dart';
@@ -75,6 +76,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         (route) => false,
                       );
                     },
+                    onView: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ResultsScreen(
+                            imagePaths: entry.outputPaths,
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -90,10 +100,12 @@ class _HistoryTile extends StatelessWidget {
   const _HistoryTile({
     required this.entry,
     required this.onReuse,
+    required this.onView,
   });
 
   final HistoryEntry entry;
   final VoidCallback onReuse;
+  final VoidCallback onView;
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +139,11 @@ class _HistoryTile extends StatelessWidget {
               ],
             ),
           ),
+          TextButton(
+            onPressed: onView,
+            child: const Text('View'),
+          ),
+          const SizedBox(width: 8),
           TextButton(
             onPressed: onReuse,
             child: const Text('Reuse'),
