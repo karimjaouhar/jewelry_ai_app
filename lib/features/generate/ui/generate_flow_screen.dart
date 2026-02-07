@@ -10,6 +10,7 @@ import 'package:jewelry_ai_app/core/services/secure_storage_service.dart';
 import 'package:jewelry_ai_app/features/generate/domain/composition_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/hair_preset.dart';
 import 'package:jewelry_ai_app/features/generate/domain/jewelry_type.dart';
+import 'package:jewelry_ai_app/features/generate/domain/model_age.dart';
 import 'package:jewelry_ai_app/features/generate/domain/model_gender.dart';
 import 'package:jewelry_ai_app/features/generate/domain/setting_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/skin_tone.dart';
@@ -201,6 +202,14 @@ class GenerateFlowScreen extends StatelessWidget {
               selected: controller.modelGender,
               labelBuilder: (value) => value.label,
               onSelected: controller.setModelGender,
+              enabled: !isLoading,
+            ),
+            const SizedBox(height: 8),
+            _ChoiceChips<ModelAge>(
+              values: ModelAge.values,
+              selected: controller.modelAge,
+              labelBuilder: (value) => value.label,
+              onSelected: controller.setModelAge,
               enabled: !isLoading,
             ),
             const SizedBox(height: 8),

@@ -1,5 +1,6 @@
 import 'package:jewelry_ai_app/features/generate/domain/composition_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/jewelry_type.dart';
+import 'package:jewelry_ai_app/features/generate/domain/model_age.dart';
 import 'package:jewelry_ai_app/features/generate/domain/model_gender.dart';
 import 'package:jewelry_ai_app/features/generate/domain/setting_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/skin_tone.dart';
@@ -9,6 +10,7 @@ class GenerationRequest {
     required this.imageFilePath,
     required this.jewelryType,
     required this.modelGender,
+    required this.modelAge,
     required this.skinTone,
     required this.settingType,
     this.lifestylePreset,
@@ -20,6 +22,7 @@ class GenerationRequest {
   final String imageFilePath;
   final JewelryType jewelryType;
   final ModelGender modelGender;
+  final ModelAge modelAge;
   final SkinTone skinTone;
   final SettingType settingType;
   final LifestylePreset? lifestylePreset;
@@ -32,6 +35,7 @@ class GenerationRequest {
       'imageFilePath': imageFilePath,
       'jewelryType': jewelryType.name,
       'modelGender': modelGender.name,
+      'modelAge': modelAge.name,
       'skinTone': skinTone.name,
       'settingType': settingType.name,
       'lifestylePreset': lifestylePreset?.name,
@@ -49,6 +53,9 @@ class GenerationRequest {
       ),
       modelGender: ModelGender.values.byName(
         (map['modelGender'] as String?) ?? ModelGender.woman.name,
+      ),
+      modelAge: ModelAge.values.byName(
+        (map['modelAge'] as String?) ?? ModelAge.twenties.name,
       ),
       skinTone: SkinTone.values.byName(
         (map['skinTone'] as String?) ?? SkinTone.medium.name,

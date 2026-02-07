@@ -1,5 +1,6 @@
 enum SettingType {
   studio,
+  studioNatural,
   lifestyle,
 }
 
@@ -8,6 +9,8 @@ extension SettingTypeLabel on SettingType {
     switch (this) {
       case SettingType.studio:
         return 'Studio';
+      case SettingType.studioNatural:
+        return 'Studio natural';
       case SettingType.lifestyle:
         return 'Lifestyle';
     }

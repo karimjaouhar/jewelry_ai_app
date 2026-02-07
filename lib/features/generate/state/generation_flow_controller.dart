@@ -6,6 +6,7 @@ import 'package:jewelry_ai_app/features/generate/domain/composition_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/generation_request.dart';
 import 'package:jewelry_ai_app/features/generate/domain/hair_preset.dart';
 import 'package:jewelry_ai_app/features/generate/domain/jewelry_type.dart';
+import 'package:jewelry_ai_app/features/generate/domain/model_age.dart';
 import 'package:jewelry_ai_app/features/generate/domain/model_gender.dart';
 import 'package:jewelry_ai_app/features/generate/domain/prompt_builder.dart';
 import 'package:jewelry_ai_app/features/generate/domain/setting_type.dart';
@@ -43,6 +44,7 @@ class GenerationFlowController extends ChangeNotifier {
   String? _selectedImagePath;
   JewelryType _jewelryType = JewelryType.necklace;
   ModelGender _modelGender = ModelGender.woman;
+  ModelAge _modelAge = ModelAge.twenties;
   SkinTone _skinTone = SkinTone.medium;
   HairPreset? _hairPreset;
   SettingType _settingType = SettingType.studio;
@@ -61,6 +63,7 @@ class GenerationFlowController extends ChangeNotifier {
   bool get hasSelectedImage => _selectedImagePath != null;
   JewelryType get jewelryType => _jewelryType;
   ModelGender get modelGender => _modelGender;
+  ModelAge get modelAge => _modelAge;
   SkinTone get skinTone => _skinTone;
   HairPreset? get hairPreset => _hairPreset;
   SettingType get settingType => _settingType;
@@ -122,6 +125,14 @@ class GenerationFlowController extends ChangeNotifier {
       return;
     }
     _modelGender = value;
+    notifyListeners();
+  }
+
+  void setModelAge(ModelAge value) {
+    if (value == _modelAge) {
+      return;
+    }
+    _modelAge = value;
     notifyListeners();
   }
 
@@ -208,6 +219,7 @@ class GenerationFlowController extends ChangeNotifier {
       imageFilePath: _selectedImagePath!,
       jewelryType: _jewelryType,
       modelGender: _modelGender,
+      modelAge: _modelAge,
       skinTone: _skinTone,
       settingType: _settingType,
       lifestylePreset:
@@ -274,6 +286,7 @@ class GenerationFlowController extends ChangeNotifier {
   void applyRequestSnapshot(GenerationRequest request) {
     _jewelryType = request.jewelryType;
     _modelGender = request.modelGender;
+    _modelAge = request.modelAge;
     _skinTone = request.skinTone;
     _settingType = request.settingType;
     _lifestylePreset = request.lifestylePreset ?? LifestylePreset.beach;

@@ -1,6 +1,7 @@
 enum CompositionType {
   closeUp,
   midShot,
+  lifestyleWide,
 }
 
 extension CompositionTypeLabel on CompositionType {
@@ -10,6 +11,8 @@ extension CompositionTypeLabel on CompositionType {
         return 'Close-up';
       case CompositionType.midShot:
         return 'Mid shot';
+      case CompositionType.lifestyleWide:
+        return 'Lifestyle wide';
     }
   }
 }

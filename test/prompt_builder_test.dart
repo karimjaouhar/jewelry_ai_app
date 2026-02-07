@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jewelry_ai_app/features/generate/domain/composition_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/generation_request.dart';
 import 'package:jewelry_ai_app/features/generate/domain/jewelry_type.dart';
+import 'package:jewelry_ai_app/features/generate/domain/model_age.dart';
 import 'package:jewelry_ai_app/features/generate/domain/model_gender.dart';
 import 'package:jewelry_ai_app/features/generate/domain/prompt_builder.dart';
 import 'package:jewelry_ai_app/features/generate/domain/setting_type.dart';
@@ -15,6 +16,7 @@ void main() {
       imageFilePath: 'path/to/image.jpg',
       jewelryType: JewelryType.necklace,
       modelGender: ModelGender.woman,
+      modelAge: ModelAge.twenties,
       skinTone: SkinTone.medium,
       settingType: SettingType.studio,
       compositionType: CompositionType.closeUp,
@@ -35,6 +37,7 @@ void main() {
       imageFilePath: 'path/to/image.jpg',
       jewelryType: JewelryType.ring,
       modelGender: ModelGender.neutral,
+      modelAge: ModelAge.forties,
       skinTone: SkinTone.light,
       settingType: SettingType.lifestyle,
       lifestylePreset: LifestylePreset.street,
