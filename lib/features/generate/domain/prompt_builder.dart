@@ -36,11 +36,12 @@ class PromptBuilder {
   String _buildSystem(GenerationRequest request) {
     final buffer = StringBuffer()
       ..writeln('You are a product photography assistant.')
-      ..writeln('Preserve the jewelry exactly as in the reference image.')
+      ..writeln('Preserve the jewelry exactly as in the reference image(s).')
       ..writeln(
         'No redesigns: keep shape, stones, metal tone, proportions, and details identical.',
       )
       ..writeln('Do not add or remove jewelry pieces.')
+      ..writeln(_referenceRule(request))
       ..writeln(
         _placementRule(
           request.jewelryType,
@@ -66,6 +67,13 @@ class PromptBuilder {
     }
 
     return buffer.toString().trim();
+  }
+
+  String _referenceRule(GenerationRequest request) {
+    if (request.imageFilePaths.length <= 1) {
+      return 'Use the reference image to match jewelry details.';
+    }
+    return 'Use all reference images to match jewelry details consistently.';
   }
 
   String? _buildNegative(GenerationRequest request) {

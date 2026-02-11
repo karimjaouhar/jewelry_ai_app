@@ -1,7 +1,8 @@
 enum SkinTone {
   light,
-  medium,
-  deep,
+  tanned,
+  brown,
+  dark,
 }
 
 extension SkinToneLabel on SkinTone {
@@ -9,10 +10,12 @@ extension SkinToneLabel on SkinTone {
     switch (this) {
       case SkinTone.light:
         return 'Light';
-      case SkinTone.medium:
-        return 'Medium';
-      case SkinTone.deep:
-        return 'Deep';
+      case SkinTone.tanned:
+        return 'Tanned';
+      case SkinTone.brown:
+        return 'Brown';
+      case SkinTone.dark:
+        return 'Dark';
     }
   }
 }

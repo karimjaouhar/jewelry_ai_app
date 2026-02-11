@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
+
+import 'package:jewelry_ai_app/app/theme_controller.dart';
 import 'package:jewelry_ai_app/core/services/secure_storage_service.dart';
 
 class ApiKeyScreen extends StatefulWidget {
@@ -84,7 +87,9 @@ class _ApiKeyScreenState extends State<ApiKeyScreen> {
   @override
   Widget build(BuildContext context) {
     final statusText = _hasSavedKey ? 'Saved' : 'Not saved';
-    final statusColor = _hasSavedKey ? Colors.green : Colors.red;
+    final colorScheme = Theme.of(context).colorScheme;
+    final statusColor =
+        _hasSavedKey ? colorScheme.onSurface : colorScheme.onSurfaceVariant;
 
     return Scaffold(
       appBar: AppBar(
@@ -94,6 +99,8 @@ class _ApiKeyScreenState extends State<ApiKeyScreen> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            _ThemeModeTile(),
+            const SizedBox(height: 24),
             Text(
               'Status: $statusText',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -141,6 +148,21 @@ class _ApiKeyScreenState extends State<ApiKeyScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ThemeModeTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<ThemeController>();
+    final isDark = controller.themeMode == ThemeMode.dark;
+    return SwitchListTile(
+      value: isDark,
+      onChanged: controller.setDarkMode,
+      title: const Text('Dark theme'),
+      subtitle: const Text('Studio-lit, calm, and high-contrast.'),
+      contentPadding: EdgeInsets.zero,
     );
   }
 }

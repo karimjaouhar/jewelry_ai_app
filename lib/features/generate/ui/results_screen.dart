@@ -94,11 +94,12 @@ class FullScreenViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.scrim,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: colorScheme.scrim,
+        foregroundColor: colorScheme.surface,
         title: const Text('Preview'),
         actions: [
           IconButton(

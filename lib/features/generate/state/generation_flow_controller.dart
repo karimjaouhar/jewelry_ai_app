@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 
 import 'package:jewelry_ai_app/features/generate/domain/composition_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/generation_request.dart';
-import 'package:jewelry_ai_app/features/generate/domain/hair_preset.dart';
 import 'package:jewelry_ai_app/features/generate/domain/jewelry_type.dart';
 import 'package:jewelry_ai_app/features/generate/domain/model_age.dart';
 import 'package:jewelry_ai_app/features/generate/domain/model_gender.dart';
@@ -41,16 +40,15 @@ class GenerationFlowController extends ChangeNotifier {
   final HistoryStore _historyStore;
 
   int _currentStepIndex = 0;
-  String? _selectedImagePath;
-  JewelryType _jewelryType = JewelryType.necklace;
+  final List<String> _selectedImagePaths = [];
+  JewelryType? _jewelryType;
   ModelGender _modelGender = ModelGender.woman;
   ModelAge _modelAge = ModelAge.twenties;
-  SkinTone _skinTone = SkinTone.medium;
-  HairPreset? _hairPreset;
-  SettingType _settingType = SettingType.studio;
+  SkinTone _skinTone = SkinTone.light;
+  SettingType _settingType = SettingType.studioNatural;
   LifestylePreset _lifestylePreset = LifestylePreset.beach;
   CompositionType _compositionType = CompositionType.closeUp;
-  int _variations = 2;
+  int _variations = 1;
   GenerationStatus _status = GenerationStatus.idle;
   String? _errorMessage;
   List<String> _generatedImagePaths = [];
@@ -59,13 +57,13 @@ class GenerationFlowController extends ChangeNotifier {
   PromptParts? _lastPrompt;
 
   int get currentStepIndex => _currentStepIndex;
-  String? get selectedImagePath => _selectedImagePath;
-  bool get hasSelectedImage => _selectedImagePath != null;
-  JewelryType get jewelryType => _jewelryType;
+  List<String> get selectedImagePaths =>
+      List.unmodifiable(_selectedImagePaths);
+  bool get hasSelectedImages => _selectedImagePaths.isNotEmpty;
+  JewelryType? get jewelryType => _jewelryType;
   ModelGender get modelGender => _modelGender;
   ModelAge get modelAge => _modelAge;
   SkinTone get skinTone => _skinTone;
-  HairPreset? get hairPreset => _hairPreset;
   SettingType get settingType => _settingType;
   LifestylePreset get lifestylePreset => _lifestylePreset;
   CompositionType get compositionType => _compositionType;
@@ -89,10 +87,9 @@ class GenerationFlowController extends ChangeNotifier {
   }
 
   void setSelectedImagePath(String path) {
-    if (path == _selectedImagePath) {
-      return;
-    }
-    _selectedImagePath = path;
+    _selectedImagePaths
+      ..clear()
+      ..add(path);
     _generatedImagePaths = [];
     _generatedOutputDirectory = null;
     _status = GenerationStatus.idle;
@@ -100,11 +97,49 @@ class GenerationFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearSelectedImage() {
-    if (_selectedImagePath == null) {
+  void addSelectedImagePath(String path) {
+    if (_selectedImagePaths.contains(path)) {
       return;
     }
-    _selectedImagePath = null;
+    _selectedImagePaths.add(path);
+    _generatedImagePaths = [];
+    _generatedOutputDirectory = null;
+    _status = GenerationStatus.idle;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void addSelectedImagePaths(List<String> paths) {
+    final filtered = paths.where((path) => path.isNotEmpty).toList();
+    if (filtered.isEmpty) {
+      return;
+    }
+    final added = filtered.where((path) => !_selectedImagePaths.contains(path));
+    _selectedImagePaths.addAll(added);
+    _generatedImagePaths = [];
+    _generatedOutputDirectory = null;
+    _status = GenerationStatus.idle;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void removeSelectedImageAt(int index) {
+    if (index < 0 || index >= _selectedImagePaths.length) {
+      return;
+    }
+    _selectedImagePaths.removeAt(index);
+    _generatedImagePaths = [];
+    _generatedOutputDirectory = null;
+    _status = GenerationStatus.idle;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void clearSelectedImages() {
+    if (_selectedImagePaths.isEmpty) {
+      return;
+    }
+    _selectedImagePaths.clear();
     _generatedImagePaths = [];
     _generatedOutputDirectory = null;
     _status = GenerationStatus.idle;
@@ -125,6 +160,7 @@ class GenerationFlowController extends ChangeNotifier {
       return;
     }
     _modelGender = value;
+    _skinTone = _defaultSkinToneFor(value);
     notifyListeners();
   }
 
@@ -141,14 +177,6 @@ class GenerationFlowController extends ChangeNotifier {
       return;
     }
     _skinTone = value;
-    notifyListeners();
-  }
-
-  void setHairPreset(HairPreset? value) {
-    if (value == _hairPreset) {
-      return;
-    }
-    _hairPreset = value;
     notifyListeners();
   }
 
@@ -177,18 +205,20 @@ class GenerationFlowController extends ChangeNotifier {
   }
 
   void setVariations(int value) {
-    if (value == _variations) {
+    final normalized = _clampInt(value, 1, 1);
+    if (normalized == _variations) {
       return;
     }
-    _variations = _clampInt(value, 2, 4);
+    _variations = normalized;
     notifyListeners();
   }
 
   void setStepIndex(int index) {
-    if (index == _currentStepIndex) {
+    final normalized = _clampInt(index, 0, 4);
+    if (normalized == _currentStepIndex) {
       return;
     }
-    _currentStepIndex = index;
+    _currentStepIndex = normalized;
     notifyListeners();
   }
 
@@ -197,8 +227,12 @@ class GenerationFlowController extends ChangeNotifier {
   }
 
   Future<void> generate() async {
-    if (_selectedImagePath == null) {
-      _setError('Please upload a jewelry photo first.');
+    if (_selectedImagePaths.isEmpty) {
+      _setError('Please upload at least one jewelry photo first.');
+      return;
+    }
+    if (_jewelryType == null) {
+      _setError('Select a jewelry type to continue.');
       return;
     }
     if (isLoading) {
@@ -216,8 +250,8 @@ class GenerationFlowController extends ChangeNotifier {
     }
 
     final request = GenerationRequest(
-      imageFilePath: _selectedImagePath!,
-      jewelryType: _jewelryType,
+      imageFilePaths: List.unmodifiable(_selectedImagePaths),
+      jewelryType: _jewelryType!,
       modelGender: _modelGender,
       modelAge: _modelAge,
       skinTone: _skinTone,
@@ -225,7 +259,7 @@ class GenerationFlowController extends ChangeNotifier {
       lifestylePreset:
           _settingType == SettingType.lifestyle ? _lifestylePreset : null,
       compositionType: _compositionType,
-      variations: _variations,
+      variations: 1,
     );
 
     final prompt = _promptBuilder.build(request);
@@ -285,17 +319,23 @@ class GenerationFlowController extends ChangeNotifier {
 
   void applyRequestSnapshot(GenerationRequest request) {
     _jewelryType = request.jewelryType;
-    _modelGender = request.modelGender;
+    _modelGender = request.modelGender == ModelGender.neutral
+        ? ModelGender.woman
+        : request.modelGender;
     _modelAge = request.modelAge;
     _skinTone = request.skinTone;
     _settingType = request.settingType;
     _lifestylePreset = request.lifestylePreset ?? LifestylePreset.beach;
     _compositionType = request.compositionType;
-    _variations = _clampInt(request.variations, 2, 4);
-    if (request.imageFilePath.isNotEmpty) {
-      final file = File(request.imageFilePath);
+    _variations = 1;
+    _selectedImagePaths.clear();
+    for (final path in request.imageFilePaths) {
+      if (path.isEmpty) {
+        continue;
+      }
+      final file = File(path);
       if (file.existsSync()) {
-        _selectedImagePath = request.imageFilePath;
+        _selectedImagePaths.add(path);
       }
     }
     _status = GenerationStatus.idle;
@@ -338,6 +378,17 @@ class GenerationFlowController extends ChangeNotifier {
       _setError(_friendlyErrorMessage(error));
     } catch (_) {
       _setError('Something went wrong. Please try again.');
+    }
+  }
+
+  SkinTone _defaultSkinToneFor(ModelGender gender) {
+    switch (gender) {
+      case ModelGender.woman:
+        return SkinTone.light;
+      case ModelGender.man:
+        return SkinTone.tanned;
+      case ModelGender.neutral:
+        return SkinTone.tanned;
     }
   }
 }

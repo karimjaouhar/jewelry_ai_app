@@ -13,11 +13,11 @@ void main() {
 
   test('Necklace prompt includes fidelity and placement rules', () {
     const request = GenerationRequest(
-      imageFilePath: 'path/to/image.jpg',
+      imageFilePaths: ['path/to/image.jpg'],
       jewelryType: JewelryType.necklace,
       modelGender: ModelGender.woman,
       modelAge: ModelAge.twenties,
-      skinTone: SkinTone.medium,
+      skinTone: SkinTone.tanned,
       settingType: SettingType.studio,
       compositionType: CompositionType.closeUp,
       variations: 2,
@@ -34,10 +34,10 @@ void main() {
 
   test('Ring prompt includes fidelity and placement rules', () {
     const request = GenerationRequest(
-      imageFilePath: 'path/to/image.jpg',
+      imageFilePaths: ['path/to/image.jpg'],
       jewelryType: JewelryType.ring,
       modelGender: ModelGender.neutral,
-      modelAge: ModelAge.forties,
+      modelAge: ModelAge.adult,
       skinTone: SkinTone.light,
       settingType: SettingType.lifestyle,
       lifestylePreset: LifestylePreset.street,

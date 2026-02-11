@@ -14,6 +14,6 @@ void main() {
     await tester.pumpWidget(const JewelryApp());
 
     expect(find.text('Generate'), findsOneWidget);
-    expect(find.text('Upload photo'), findsOneWidget);
+    expect(find.text('Upload photos'), findsOneWidget);
   });
 }

@@ -7,7 +7,7 @@ import 'package:jewelry_ai_app/features/generate/domain/skin_tone.dart';
 
 class GenerationRequest {
   const GenerationRequest({
-    required this.imageFilePath,
+    required this.imageFilePaths,
     required this.jewelryType,
     required this.modelGender,
     required this.modelAge,
@@ -19,7 +19,7 @@ class GenerationRequest {
     this.seed,
   });
 
-  final String imageFilePath;
+  final List<String> imageFilePaths;
   final JewelryType jewelryType;
   final ModelGender modelGender;
   final ModelAge modelAge;
@@ -32,7 +32,7 @@ class GenerationRequest {
 
   Map<String, dynamic> toMap() {
     return {
-      'imageFilePath': imageFilePath,
+      'imageFilePaths': imageFilePaths,
       'jewelryType': jewelryType.name,
       'modelGender': modelGender.name,
       'modelAge': modelAge.name,
@@ -46,20 +46,17 @@ class GenerationRequest {
   }
 
   factory GenerationRequest.fromMap(Map<String, dynamic> map) {
+    final imageFilePaths = _parseImageFilePaths(map);
     return GenerationRequest(
-      imageFilePath: map['imageFilePath'] as String? ?? '',
+      imageFilePaths: imageFilePaths,
       jewelryType: JewelryType.values.byName(
         (map['jewelryType'] as String?) ?? JewelryType.necklace.name,
       ),
       modelGender: ModelGender.values.byName(
         (map['modelGender'] as String?) ?? ModelGender.woman.name,
       ),
-      modelAge: ModelAge.values.byName(
-        (map['modelAge'] as String?) ?? ModelAge.twenties.name,
-      ),
-      skinTone: SkinTone.values.byName(
-        (map['skinTone'] as String?) ?? SkinTone.medium.name,
-      ),
+      modelAge: _parseModelAge(map['modelAge']),
+      skinTone: _parseSkinTone(map['skinTone']),
       settingType: SettingType.values.byName(
         (map['settingType'] as String?) ?? SettingType.studio.name,
       ),
@@ -67,9 +64,21 @@ class GenerationRequest {
       compositionType: CompositionType.values.byName(
         (map['compositionType'] as String?) ?? CompositionType.closeUp.name,
       ),
-      variations: map['variations'] as int? ?? 2,
+      variations: map['variations'] as int? ?? 1,
       seed: map['seed'] as int?,
     );
+  }
+
+  static List<String> _parseImageFilePaths(Map<String, dynamic> map) {
+    final rawList = map['imageFilePaths'];
+    if (rawList is List) {
+      return rawList.map((value) => value.toString()).toList();
+    }
+    final legacyPath = map['imageFilePath'];
+    if (legacyPath is String && legacyPath.isNotEmpty) {
+      return [legacyPath];
+    }
+    return <String>[];
   }
 
   static LifestylePreset? _parseLifestylePreset(Object? value) {
@@ -77,5 +86,45 @@ class GenerationRequest {
       return null;
     }
     return LifestylePreset.values.byName(value);
+  }
+
+  static SkinTone _parseSkinTone(Object? value) {
+    final raw = value is String ? value : '';
+    switch (raw) {
+      case 'light':
+        return SkinTone.light;
+      case 'medium':
+        return SkinTone.tanned;
+      case 'tanned':
+        return SkinTone.tanned;
+      case 'brown':
+        return SkinTone.brown;
+      case 'deep':
+        return SkinTone.dark;
+      case 'dark':
+        return SkinTone.dark;
+      default:
+        return SkinTone.tanned;
+    }
+  }
+
+  static ModelAge _parseModelAge(Object? value) {
+    final raw = value is String ? value : '';
+    switch (raw) {
+      case 'kids':
+        return ModelAge.teen;
+      case 'forties':
+        return ModelAge.adult;
+      case 'teen':
+        return ModelAge.teen;
+      case 'twenties':
+        return ModelAge.twenties;
+      case 'adult':
+        return ModelAge.adult;
+      case 'senior':
+        return ModelAge.senior;
+      default:
+        return ModelAge.twenties;
+    }
   }
 }

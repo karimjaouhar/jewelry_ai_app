@@ -116,7 +116,9 @@ class _HistoryTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -156,7 +158,7 @@ class _HistoryTile extends StatelessWidget {
   String _buildSubtitle(GenerationRequest request) {
     final setting = request.settingType.label;
     final composition = request.compositionType.label;
-    return '$setting • $composition';
+    return '$setting - $composition';
   }
 }
 
@@ -169,7 +171,7 @@ class _Thumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = 56.0;
     if (path == null || path!.isEmpty) {
-      return _placeholder(size);
+      return _placeholder(context, size);
     }
 
     final image = kIsWeb
@@ -186,12 +188,12 @@ class _Thumbnail extends StatelessWidget {
     );
   }
 
-  Widget _placeholder(double size) {
+  Widget _placeholder(BuildContext context, double size) {
     return Container(
       height: size,
       width: size,
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Icon(Icons.image_outlined),

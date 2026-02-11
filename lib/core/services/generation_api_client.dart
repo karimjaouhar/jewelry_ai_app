@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:jewelry_ai_app/features/generate/domain/generation_request.dart';
@@ -47,17 +48,21 @@ class DioGenerationApiClient implements GenerationApiClient {
     required GenerationRequest request,
     required PromptParts prompt,
   }) async {
-    final imageBytes = await File(request.imageFilePath).readAsBytes();
-    final imageData = base64Encode(imageBytes);
-    final mimeType = _detectMimeType(request.imageFilePath);
+    if (kIsWeb) {
+      throw GenerationApiException(
+        GenerationErrorType.unknown,
+        'Generation is not supported on web yet.',
+      );
+    }
+
+    final imageParts = await _buildImageParts(request.imageFilePaths);
     final promptText = _buildPromptText(prompt);
 
     final images = <Uint8List>[];
     for (var i = 0; i < request.variations; i++) {
       final result = await _generateOnce(
         apiKey: apiKey,
-        imageData: imageData,
-        mimeType: mimeType,
+        imageParts: imageParts,
         promptText: promptText,
       );
       images.addAll(result);
@@ -68,8 +73,7 @@ class DioGenerationApiClient implements GenerationApiClient {
 
   Future<List<Uint8List>> _generateOnce({
     required String apiKey,
-    required String imageData,
-    required String mimeType,
+    required List<Map<String, dynamic>> imageParts,
     required String promptText,
   }) async {
     try {
@@ -80,12 +84,7 @@ class DioGenerationApiClient implements GenerationApiClient {
             {
               'role': 'user',
               'parts': [
-                {
-                  'inline_data': {
-                    'mime_type': mimeType,
-                    'data': imageData,
-                  }
-                },
+                ...imageParts,
                 {'text': promptText},
               ],
             },
@@ -198,6 +197,40 @@ class DioGenerationApiClient implements GenerationApiClient {
       buffer.writeln('Negative constraints: ${parts.negative}');
     }
     return buffer.toString().trim();
+  }
+
+  Future<List<Map<String, dynamic>>> _buildImageParts(
+    List<String> imagePaths,
+  ) async {
+    final parts = <Map<String, dynamic>>[];
+
+    for (final path in imagePaths) {
+      if (path.isEmpty) {
+        continue;
+      }
+      final file = File(path);
+      if (!file.existsSync()) {
+        continue;
+      }
+      final bytes = await file.readAsBytes();
+      final data = base64Encode(bytes);
+      final mimeType = _detectMimeType(path);
+      parts.add({
+        'inline_data': {
+          'mime_type': mimeType,
+          'data': data,
+        },
+      });
+    }
+
+    if (parts.isEmpty) {
+      throw GenerationApiException(
+        GenerationErrorType.emptyResult,
+        'No valid reference images were found.',
+      );
+    }
+
+    return parts;
   }
 
   String _detectMimeType(String path) {
