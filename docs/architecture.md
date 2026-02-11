@@ -1,19 +1,18 @@
-# Architecture & Technical Specification — Jewelry AI App (Private)
+# Architecture & Technical Spec - Jewelry AI App (Private)
 
 ## Purpose
-A private Android app (Samsung-first) for generating photorealistic marketing images of models wearing real jewelry from a user-uploaded product photo. The app wraps a generative image API (Nano Banana Pro) and enforces consistent prompt templates + constraints so non-technical users get repeatable results.
+Private Android-first Flutter app that generates photorealistic marketing images of models wearing real jewelry from user-provided reference photos. The app wraps a generative image API and enforces strict prompt templates to preserve jewelry fidelity.
 
 ## Goals
-- Minimal user typing: structured UI → deterministic prompt construction.
-- High jewelry fidelity: preserve design, proportions, metal tone, stones; no hallucinated additions.
-- Support single and multi-piece compositions (e.g., 3 bracelets stacked).
-- Fast, simple workflow and “history” to reuse successful settings.
-- Private distribution (APK), not published publicly.
+- Minimal user typing: structured UI -> deterministic prompt construction.
+- High fidelity: preserve shape, stones, metal tone, proportions, and details.
+- Support multiple reference photos per request.
+- Simple history of prior generations with reuse.
+- Private distribution (APK), no public release.
 
-## Non-goals (v1)
-- Advanced manual editing tools (masking, compositing, retouching).
-
----
+## Non-Goals (v1)
+- Manual editing tools (masking, retouching).
+- Public sharing, authentication, payments, analytics.
 
 ## Target Platforms
 - Android (primary). iOS optional later.
@@ -21,120 +20,96 @@ A private Android app (Samsung-first) for generating photorealistic marketing im
 
 ## Tech Stack
 - Flutter (Material 3).
-- State management: Riverpod (preferred) OR Provider (acceptable). Keep it simple.
-- HTTP: `http` package or `dio` (choose one; default to `dio` for interceptors/logging).
+- State management: Provider (`ChangeNotifier`).
+- HTTP: `dio`.
 - Image selection: `image_picker`.
-- Local persistence:
-  - Secure storage for API key: `flutter_secure_storage`.
-  - History metadata storage: `shared_preferences` (v1) or `hive` (v1.1+).
-- File storage: `path_provider` to store generated images locally.
+- API key storage: `flutter_secure_storage`.
+- History storage: `shared_preferences`.
+- File storage: `path_provider` for local image saving.
+- Sharing: `share_plus`.
 
-## External Services
-- Image generation API: Gemini Nano Banana Pro (via API key).
-- Optional (later): Upscale/enhance layer (separate API/service or same provider).
-
----
-
-## Core User Flow (v1)
-1. Upload jewelry photo (camera or gallery).
+## Core User Flow (Implemented)
+1. Upload jewelry photo(s) (camera or gallery).
 2. Select jewelry type: Necklace / Earrings / Ring / Bracelet / Anklet / Other.
-3. Single vs multiple pieces (quantity if multiple).
-4. Choose model profile presets:
-   - Gender presentation: woman/man/neutral
-   - Skin tone: light/medium/deep
-   - Optional: hair style preset (useful for earrings/necklaces)
-5. Setting:
-   - Studio (default)
-   - Lifestyle (beach/street/café/evening)
-6. Composition:
-   - Close-up (default)
+3. Choose model profile:
+   - Gender presentation: woman / man / neutral.
+   - Age: teen / 20s / adult / senior.
+   - Skin tone: light / tanned / brown / dark.
+4. Choose setting:
+   - Studio
+   - Studio natural (recommended)
+   - Lifestyle + preset (beach / street / cafe / evening)
+5. Choose composition:
+   - Close-up (recommended)
    - Mid shot
-7. Generate 2–4 variations.
-8. Save/share + history entry (inputs + output thumbnails).
+   - Lifestyle wide
+6. Generate (currently 1 variation per request).
+7. View results, share, and reuse from history.
 
----
+## Prompt Engineering (Implemented)
+`PromptBuilder.build(request)` returns:
+- System rules (global fidelity constraints)
+- User prompt (structured request)
+- Negative constraints (e.g., no text, no watermarks, no anatomy errors)
 
-## Prompt Engineering Approach
-Prompting must be generated from structured inputs (no user prompt required).
 Key rules:
-- Fidelity constraints are mandatory:
-  - “Keep the jewelry identical to the reference image: same shape, stones, metal tone, proportions; do not redesign.”
-  - “Do not add extra jewelry or decorations.”
-- Placement rules depend on jewelry type (necklace drape, earrings visibility, ring hand pose, bracelet stacking).
-- Photography style rules:
-  - Studio: clean background, softbox lighting, shallow depth of field, sharp focus on jewelry.
-  - Lifestyle: realistic environment but jewelry remains sharp and dominant.
-- Negatives:
-  - No text, watermark, logos.
-  - Avoid distorted anatomy, extra fingers, melted metal, incorrect symmetry.
+- Preserve jewelry exactly as reference (shape, stones, metal tone, proportions).
+- Do not add or remove jewelry.
+- Placement rules by jewelry type.
+- Style rules based on setting and composition.
 
-Implementation:
-- `PromptBuilder.build(request)` returns:
-  - `system` instructions (global rules)
-  - `user` prompt (specific request)
-  - optional “negative” string if API supports it.
+## API Integration
+- Endpoint: Gemini `gemini-3-pro-image-preview:generateContent`.
+- Request uses inline base64 reference images + structured prompt text.
+- Response expects inline base64 images.
+- Error handling maps to friendly messages (invalid key, rate limit, network, empty result).
 
----
-
-## Data Model (v1)
+## Data Model (Implemented)
 ### GenerationRequest
-- imageFilePath (or bytes)
-- jewelryType (enum)
-- pieceCount (int)
-- modelGender (enum)
-- skinTone (enum)
-- setting (enum)
-- composition (enum)
-- variations (int)
-- seed (optional; if supported)
+- `imageFilePaths` (List<String>)
+- `jewelryType` (enum)
+- `modelGender` (enum)
+- `modelAge` (enum)
+- `skinTone` (enum)
+- `settingType` (enum)
+- `lifestylePreset` (enum, optional)
+- `compositionType` (enum)
+- `variations` (int, fixed to 1 in UI)
+- `seed` (optional)
 
 ### GenerationResult
-- requestId
-- createdAt
-- outputs: list of generated image file paths
-- requestSnapshot: GenerationRequest (serialized)
+- `imageUrls` (List<String>)
+- `seed` (optional)
 
----
+### HistoryEntry
+- `id`, `createdAt`
+- `requestSnapshot` (GenerationRequest)
+- `outputPaths` (List<String>)
 
-## Error Handling & UX
-- Validate inputs before generate.
-- Show progress state with cancellable UI (if API supports cancellation).
-- Handle typical failures:
-  - network errors
-  - API key invalid
-  - API rate limit
-  - model returned empty result
-- Provide “Try again” and “Regenerate same settings”.
-
----
+## Project Structure (Current)
+```
+lib/
+  app/ (app.dart, theme.dart, router.dart, theme_controller.dart)
+  core/services/ (generation_api_client.dart, secure_storage_service.dart)
+  features/
+    generate/
+      data/ (generation_repository.dart)
+      domain/ (enums, models, prompt_builder.dart)
+      state/ (generation_flow_controller.dart)
+      ui/ (generate_flow_screen.dart, results_screen.dart)
+    history/
+      data/ (history_store.dart)
+      domain/ (history_entry.dart)
+      ui/ (history_screen.dart)
+    settings/
+      ui/ (api_key_screen.dart)
+```
 
 ## Security & Privacy
-- API key stored only in secure storage on device (v1).
-- No analytics.
-- No remote logging of images.
-- All images stored locally unless user shares externally.
-
----
+- API key stored only in secure storage on device.
+- No analytics or remote image logging.
+- Images are stored locally and shared only when the user chooses.
 
 ## Build & Distribution
 - Debug builds for development.
 - Release APK for private distribution.
-- No Play Store publishing.
-- Optional app signing for stable install updates.
-
----
-
-## Implementation Milestones
-V1:
-- Clean UI shell + routing
-- Upload image step
-- Config screen for options
-- PromptBuilder
-- API integration for image generation
-- Display results grid + save/share
-- History list (simple)
-
-V1.1:
-- Upscale pass (optional)
-- Better local database (Hive)
-
